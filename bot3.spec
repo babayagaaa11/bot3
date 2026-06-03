@@ -41,7 +41,7 @@ for d in ['PyQt5', 'PySide2', 'cv2', 'Crypto', 'numpy', 'PIL', 'frida', 'capston
         datas.append((str(p.relative_to(root)), d))
 
 a = Analysis(
-    ['kT2QOz8H8O.pyc'],
+    ['run.py'],
     pathex=[str(root)],
     binaries=binaries,
     datas=datas,
