@@ -1,30 +1,29 @@
 import sys, os, marshal, traceback
 
-# PyInstaller frozen environment
-if getattr(sys, 'frozen', False):
-    base_dir = sys._MEIPASS
-else:
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+base_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, base_dir)
+sys._MEIPASS = base_dir
 
 print(f"[run.py] base_dir={base_dir}")
-print(f"[run.py] sys.path[0]={sys.path[0] if sys.path else '?'}")
-print(f"[run.py] frozen={getattr(sys, 'frozen', False)}")
 
 try:
-    # Load and run the main obfuscated module
+    # Step 1: Run PyInstaller bootstrap to set up frozen import system
+    # This installs FrozenImporter for PYZ-00.pyz modules (PyQt5, numpy, etc.)
+    with open(os.path.join(base_dir, 'pyiboot01_bootstrap.pyc'), 'rb') as f:
+        bootstrap = marshal.loads(f.read()[16:])
+    exec(bootstrap)
+
+    # Step 2: Load and run the main obfuscated module
     pyc_path = os.path.join(base_dir, 'kT2QOz8H8O.pyc')
-    print(f"[run.py] Loading {pyc_path} ({os.path.getsize(pyc_path)} bytes) ...")
+    print(f"[run.py] Loading {pyc_path} ...")
     with open(pyc_path, 'rb') as f:
-        header = f.read(16)
-        code = marshal.loads(f.read())
+        code = marshal.loads(f.read()[16:])
+
+    main_mod = sys.modules['__main__']
+    main_mod.__dict__['__file__'] = pyc_path
+
     print(f"[run.py] Executing main module ...")
-    # PyArmor needs __file__ set to the real module path to find obfuscated files
-    # Save original, set to pyc path, exec, then restore
-    _orig_file = globals().get('__file__')
-    globals()['__file__'] = pyc_path
-    exec(code)
-    if _orig_file:
-        globals()['__file__'] = _orig_file
+    exec(code, main_mod.__dict__)
 except Exception as e:
     print(f"\n[FATAL] {type(e).__name__}: {e}")
     traceback.print_exc()
