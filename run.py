@@ -19,7 +19,12 @@ try:
         code = marshal.loads(f.read())
     print(f"[run.py] Executing main module ...")
     # PyArmor needs __file__ set to the real module path to find obfuscated files
-    exec(code, {'__name__': '__main__', '__file__': pyc_path})
+    # Save original, set to pyc path, exec, then restore
+    _orig_file = globals().get('__file__')
+    globals()['__file__'] = pyc_path
+    exec(code)
+    if _orig_file:
+        globals()['__file__'] = _orig_file
 except Exception as e:
     print(f"\n[FATAL] {type(e).__name__}: {e}")
     traceback.print_exc()
